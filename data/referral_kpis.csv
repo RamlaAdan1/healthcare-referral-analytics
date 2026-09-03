@@ -1,0 +1,8 @@
+metric,category,as_is,to_be,unit
+Cases completed at Level 5,Patient flow,96.33,331.71,cases per day
+Onward referrals to Level 6,Patient flow,95.77,35.10,referrals per day
+Ward review queue,Waiting time,175.03,21.97,minutes
+Speciality availability queue,Waiting time,65.83,12.66,minutes
+External transport request queue,Waiting time,38.58,9.03,minutes
+Transport coordination queue,Waiting time,34.28,9.14,minutes
+Reception queue,Waiting time,57.16,5.51,minutes
