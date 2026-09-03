@@ -1,3 +1,4 @@
+import altair as alt
 import duckdb
 import streamlit as st
 
@@ -37,6 +38,82 @@ def get_kpi(metric_name):
     ].iloc[0]
 
 
+def create_comparison_chart(
+    data,
+    label_column,
+    value_column,
+    label_order,
+    height
+):
+    long_data = data.melt(
+        id_vars=label_column,
+        value_vars=["AS-IS", "TO-BE"],
+        var_name="Scenario",
+        value_name=value_column
+    )
+
+    base_chart = alt.Chart(long_data).encode(
+        y=alt.Y(
+            label_column,
+            type="nominal",
+            title=None,
+            sort=label_order,
+            axis=alt.Axis(
+                labelLimit=350,
+                labelFontSize=14
+            )
+        ),
+        yOffset=alt.YOffset("Scenario:N"),
+        x=alt.X(
+            value_column,
+            type="quantitative",
+            title=value_column
+        )
+    )
+
+    bars = base_chart.mark_bar(
+        cornerRadiusEnd=4
+    ).encode(
+        color=alt.Color(
+            "Scenario:N",
+            scale=alt.Scale(
+                domain=["AS-IS", "TO-BE"],
+                range=["#EF4444", "#10B981"]
+            ),
+            legend=alt.Legend(
+                title=None,
+                orient="bottom"
+            )
+        ),
+        tooltip=[
+            alt.Tooltip(label_column, type="nominal"),
+            alt.Tooltip("Scenario:N", title="Scenario"),
+            alt.Tooltip(
+                value_column,
+                type="quantitative",
+                format=".2f"
+            )
+        ]
+    )
+
+    numbers = base_chart.mark_text(
+        align="right",
+        baseline="middle",
+        dx=-6,
+        color="white",
+        fontSize=13,
+        fontWeight="bold"
+    ).encode(
+        text=alt.Text(
+            value_column,
+            type="quantitative",
+            format=".2f"
+        )
+    )
+
+    return (bars + numbers).properties(height=height)
+
+
 kpi_data = load_kpis()
 
 completed = get_kpi("Cases completed at Level 5")
@@ -56,6 +133,9 @@ st.info(
     "This dashboard uses simulated and anonymised academic data. "
     "It does not contain real patient records."
 )
+
+
+# KPI cards
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -86,15 +166,8 @@ col4.metric(
     delta_color="inverse"
 )
 
-st.divider()
 
-st.subheader("SQL Pipeline Output")
-
-st.dataframe(
-    kpi_data,
-    hide_index=True,
-    width="stretch"
-)
+# Waiting-time chart
 
 st.divider()
 
@@ -110,30 +183,44 @@ waiting_data = (
     })
 )
 
-waiting_data["Referral stage"] = waiting_data["Referral stage"].replace({
+waiting_data["Referral stage"] = waiting_data[
+    "Referral stage"
+].replace({
     "Ward review queue": "Ward review",
-    "Speciality availability queue": "Speciality check",
-    "External transport request queue": "Transport request",
+    "Speciality availability queue": "Speciality availability",
+    "External transport request queue": "External transport request",
     "Transport coordination queue": "Transport coordination",
     "Reception queue": "Reception"
 })
 
-st.bar_chart(
-    waiting_data,
-    x="Referral stage",
-    y=["AS-IS", "TO-BE"],
-    x_label="Referral stage",
-    y_label="Minutes",
-    color=["#EF4444", "#10B981"],
-    horizontal=True,
-    stack=False,
-    height=450
+waiting_order = [
+    "Ward review",
+    "Speciality availability",
+    "External transport request",
+    "Transport coordination",
+    "Reception"
+]
+
+waiting_chart = create_comparison_chart(
+    data=waiting_data,
+    label_column="Referral stage",
+    value_column="Minutes",
+    label_order=waiting_order,
+    height=400
+)
+
+st.altair_chart(
+    waiting_chart,
+    width="stretch"
 )
 
 st.caption(
-    "Red shows the current AS-IS process. "
-    "Green shows the improved TO-BE process."
+    "The TO-BE process reduces waiting time across "
+    "all five referral stages."
 )
+
+
+# Patient-flow chart
 
 st.divider()
 
@@ -154,19 +241,46 @@ flow_data["Measure"] = flow_data["Measure"].replace({
     "Onward referrals to Level 6": "Referred to Level 6"
 })
 
-st.bar_chart(
-    flow_data,
-    x="Measure",
-    y=["AS-IS", "TO-BE"],
-    x_label="Patient flow",
-    y_label="Average cases per day",
-    color=["#EF4444", "#10B981"],
-    horizontal=True,
-    stack=False,
-    height=300
+flow_order = [
+    "Completed at Level 5",
+    "Referred to Level 6"
+]
+
+flow_chart = create_comparison_chart(
+    data=flow_data,
+    label_column="Measure",
+    value_column="Average cases per day",
+    label_order=flow_order,
+    height=260
+)
+
+st.altair_chart(
+    flow_chart,
+    width="stretch"
 )
 
 st.caption(
     "The improved process treats more patients at Level 5 "
     "and sends fewer patients to Level 6."
 )
+
+
+# SQL pipeline table
+
+st.divider()
+
+with st.expander("View SQL pipeline output"):
+    display_table = kpi_data.rename(columns={
+        "metric": "Metric",
+        "category": "Category",
+        "as_is": "AS-IS",
+        "to_be": "TO-BE",
+        "unit": "Unit",
+        "percentage_change": "Change (%)"
+    })
+
+    st.dataframe(
+        display_table,
+        hide_index=True,
+        width="stretch"
+    )
