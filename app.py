@@ -284,3 +284,38 @@ with st.expander("View SQL pipeline output"):
         hide_index=True,
         width="stretch"
     )
+
+st.divider()
+
+st.subheader("Data Quality Checks")
+
+total_rows = len(kpi_data)
+missing_values = int(kpi_data.isna().sum().sum())
+duplicate_rows = int(kpi_data.duplicated().sum())
+
+quality1, quality2, quality3 = st.columns(3)
+
+quality1.metric(
+    "Rows loaded",
+    total_rows
+)
+
+quality2.metric(
+    "Missing values",
+    missing_values
+)
+
+quality3.metric(
+    "Duplicate rows",
+    duplicate_rows
+)
+
+if missing_values == 0 and duplicate_rows == 0:
+    st.success(
+        "All checks passed. The data is complete "
+        "and contains no duplicate rows."
+    )
+else:
+    st.warning(
+        "The data contains missing values or duplicate rows."
+    )
