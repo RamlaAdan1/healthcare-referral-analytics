@@ -95,3 +95,32 @@ st.dataframe(
     hide_index=True,
     width="stretch"
 )
+
+st.divider()
+
+st.subheader("Waiting Time: AS-IS vs TO-BE")
+
+waiting_data = (
+    kpi_data[kpi_data["category"] == "Waiting time"]
+    [["metric", "as_is", "to_be"]]
+    .rename(columns={
+        "metric": "Referral stage",
+        "as_is": "AS-IS",
+        "to_be": "TO-BE"
+    })
+)
+
+st.bar_chart(
+    waiting_data,
+    x="Referral stage",
+    y=["AS-IS", "TO-BE"],
+    color=["#EF4444", "#10B981"],
+    horizontal=True,
+    stack=False,
+    height=450
+)
+
+st.caption(
+    "Red shows the current AS-IS process. "
+    "Green shows the improved TO-BE process. Times are in minutes."
+)
