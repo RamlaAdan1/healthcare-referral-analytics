@@ -134,3 +134,39 @@ st.caption(
     "Red shows the current AS-IS process. "
     "Green shows the improved TO-BE process."
 )
+
+st.divider()
+
+st.subheader("Patient Flow: AS-IS vs TO-BE")
+
+flow_data = (
+    kpi_data[kpi_data["category"] == "Patient flow"]
+    [["metric", "as_is", "to_be"]]
+    .rename(columns={
+        "metric": "Measure",
+        "as_is": "AS-IS",
+        "to_be": "TO-BE"
+    })
+)
+
+flow_data["Measure"] = flow_data["Measure"].replace({
+    "Cases completed at Level 5": "Completed at Level 5",
+    "Onward referrals to Level 6": "Referred to Level 6"
+})
+
+st.bar_chart(
+    flow_data,
+    x="Measure",
+    y=["AS-IS", "TO-BE"],
+    x_label="Patient flow",
+    y_label="Average cases per day",
+    color=["#EF4444", "#10B981"],
+    horizontal=True,
+    stack=False,
+    height=300
+)
+
+st.caption(
+    "The improved process treats more patients at Level 5 "
+    "and sends fewer patients to Level 6."
+)
