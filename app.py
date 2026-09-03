@@ -110,10 +110,20 @@ waiting_data = (
     })
 )
 
+waiting_data["Referral stage"] = waiting_data["Referral stage"].replace({
+    "Ward review queue": "Ward review",
+    "Speciality availability queue": "Speciality check",
+    "External transport request queue": "Transport request",
+    "Transport coordination queue": "Transport coordination",
+    "Reception queue": "Reception"
+})
+
 st.bar_chart(
     waiting_data,
     x="Referral stage",
     y=["AS-IS", "TO-BE"],
+    x_label="Referral stage",
+    y_label="Minutes",
     color=["#EF4444", "#10B981"],
     horizontal=True,
     stack=False,
@@ -122,5 +132,5 @@ st.bar_chart(
 
 st.caption(
     "Red shows the current AS-IS process. "
-    "Green shows the improved TO-BE process. Times are in minutes."
+    "Green shows the improved TO-BE process."
 )
