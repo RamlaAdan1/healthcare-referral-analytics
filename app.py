@@ -264,6 +264,19 @@ st.caption(
     "and sends fewer patients to Level 6."
 )
 
+st.divider()
+
+st.subheader("How the Data Pipeline Works")
+
+st.markdown(
+    "### CSV → Python → DuckDB → SQL → Streamlit"
+)
+
+st.caption(
+    "Simulated referral data is cleaned with Python, "
+    "stored in DuckDB, queried using SQL, and presented "
+    "through the Streamlit dashboard."
+)
 
 # SQL pipeline table
 
