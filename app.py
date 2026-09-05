@@ -282,7 +282,7 @@ st.caption(
 
 st.divider()
 
-with st.expander("View SQL pipeline output"):
+with st.expander("View SQL pipeline output", expanded=False):
     display_table = kpi_data.rename(columns={
         "metric": "Metric",
         "category": "Category",
@@ -298,10 +298,26 @@ with st.expander("View SQL pipeline output"):
         width="stretch"
     )
 
+    csv_data = display_table.to_csv(
+        index=False
+    ).encode("utf-8")
+
+    st.download_button(
+        label="Download processed data (CSV)",
+        data=csv_data,
+        file_name="airtos_referral_kpis.csv",
+        mime="text/csv"
+    )
+
+
+# Data quality checks
+
 st.divider()
 
 with st.expander("Data Pipeline Health", expanded=False):
-    st.caption("Technical checks for the data loaded into the dashboard.")
+    st.caption(
+        "Technical checks for the data loaded into the dashboard."
+    )
 
     total_rows = len(kpi_data)
     missing_values = int(kpi_data.isna().sum().sum())
@@ -322,3 +338,4 @@ with st.expander("Data Pipeline Health", expanded=False):
         st.warning(
             "The data contains missing values or duplicate rows."
         )
+        
