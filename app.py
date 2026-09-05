@@ -11,35 +11,6 @@ st.set_page_config(
 )
 
 
-# Project information sidebar
-
-with st.sidebar:
-    st.header("About This Project")
-
-    st.write(
-        "AIRTOS analyses Kenya's Level 4–6 "
-        "public hospital referral pathway."
-    )
-
-    st.subheader("Technology")
-
-    st.markdown(
-        """
-        - Python
-        - Pandas
-        - DuckDB
-        - SQL
-        - Altair
-        - Streamlit
-        """
-    )
-
-    st.info(
-        "This portfolio project uses simulated "
-        "and anonymised academic data."
-    )
-
-
 @st.cache_data
 def load_kpis():
     build_data_pipeline()
@@ -61,10 +32,18 @@ def load_kpis():
         """).df()
 
 
-def get_kpi(metric_name):
-    return kpi_data[
-        kpi_data["metric"] == metric_name
-    ].iloc[0]
+def get_kpi(data, metric_name):
+    matching_rows = data[
+        data["metric"] == metric_name
+    ]
+
+    if matching_rows.empty:
+        st.error(
+            f"Required KPI was not found: {metric_name}"
+        )
+        st.stop()
+
+    return matching_rows.iloc[0]
 
 
 def create_comparison_chart(
@@ -88,8 +67,8 @@ def create_comparison_chart(
             title=None,
             sort=label_order,
             axis=alt.Axis(
-                labelLimit=350,
-                labelFontSize=14
+                labelLimit=300,
+                labelFontSize=13
             )
         ),
         yOffset=alt.YOffset("Scenario:N"),
@@ -115,11 +94,19 @@ def create_comparison_chart(
             )
         ),
         tooltip=[
-            alt.Tooltip(label_column, type="nominal"),
-            alt.Tooltip("Scenario:N", title="Scenario"),
+            alt.Tooltip(
+                label_column,
+                type="nominal",
+                title=label_column
+            ),
+            alt.Tooltip(
+                "Scenario:N",
+                title="Scenario"
+            ),
             alt.Tooltip(
                 value_column,
                 type="quantitative",
+                title=value_column,
                 format=".2f"
             )
         ]
@@ -130,7 +117,7 @@ def create_comparison_chart(
         baseline="middle",
         dx=-6,
         color="white",
-        fontSize=13,
+        fontSize=12,
         fontWeight="bold"
     ).encode(
         text=alt.Text(
@@ -140,71 +127,93 @@ def create_comparison_chart(
         )
     )
 
-    return (bars + numbers).properties(height=height)
+    return (
+        bars + numbers
+    ).properties(
+        height=height
+    )
 
+
+# Load the processed data
 
 kpi_data = load_kpis()
 
-completed = get_kpi("Cases completed at Level 5")
-referrals = get_kpi("Onward referrals to Level 6")
-ward_wait = get_kpi("Ward review queue")
-reception_wait = get_kpi("Reception queue")
+completed = get_kpi(
+    kpi_data,
+    "Cases completed at Level 5"
+)
+
+referrals = get_kpi(
+    kpi_data,
+    "Onward referrals to Level 6"
+)
+
+ward_wait = get_kpi(
+    kpi_data,
+    "Ward review queue"
+)
+
+reception_wait = get_kpi(
+    kpi_data,
+    "Reception queue"
+)
 
 
-st.title("AIRTOS: Healthcare Referral Data Platform")
+# Dashboard heading
+
+st.title("AIRTOS Referral Data Platform")
 
 st.caption(
-    "Data pipeline and analytics for Kenya's "
-    "Level 4–6 public hospital referral pathway"
-)
-
-st.info(
-    "This dashboard uses simulated and anonymised academic data. "
-    "It does not contain real patient records."
+    "Analytics for Kenya's Level 4–6 public hospital referral pathway "
+    "· Simulated and anonymised academic data only"
 )
 
 
-# KPI cards
+# Main KPI results
+
+st.subheader("Expected TO-BE Outcomes")
 
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric(
-    "Cases completed at Level 5",
-    f"{completed['to_be']:.2f} per day",
-    f"{completed['percentage_change']:+.2f}%"
+    label="Cases completed at Level 5",
+    value=f"{completed['to_be']:.1f} per day",
+    delta=f"{completed['percentage_change']:+.1f}%"
 )
 
 col2.metric(
-    "Onward referrals",
-    f"{referrals['to_be']:.2f} per day",
-    f"{referrals['percentage_change']:+.2f}%",
+    label="Onward referrals",
+    value=f"{referrals['to_be']:.1f} per day",
+    delta=f"{referrals['percentage_change']:+.1f}%",
     delta_color="inverse"
 )
 
 col3.metric(
-    "Ward review waiting time",
-    f"{ward_wait['to_be']:.2f} minutes",
-    f"{ward_wait['percentage_change']:+.2f}%",
+    label="Ward review waiting time",
+    value=f"{ward_wait['to_be']:.1f} minutes",
+    delta=f"{ward_wait['percentage_change']:+.1f}%",
     delta_color="inverse"
 )
 
 col4.metric(
-    "Reception waiting time",
-    f"{reception_wait['to_be']:.2f} minutes",
-    f"{reception_wait['percentage_change']:+.2f}%",
+    label="Reception waiting time",
+    value=f"{reception_wait['to_be']:.1f} minutes",
+    delta=f"{reception_wait['percentage_change']:+.1f}%",
     delta_color="inverse"
 )
 
+st.caption(
+    "Green changes show an improvement compared with "
+    "the current AS-IS process."
+)
 
-# Waiting-time chart
 
-st.divider()
-
-st.subheader("Waiting Time: AS-IS vs TO-BE")
+# Prepare waiting-time data
 
 waiting_data = (
-    kpi_data[kpi_data["category"] == "Waiting time"]
-    [["metric", "as_is", "to_be"]]
+    kpi_data[
+        kpi_data["category"] == "Waiting time"
+    ][["metric", "as_is", "to_be"]]
     .rename(columns={
         "metric": "Referral stage",
         "as_is": "AS-IS",
@@ -230,34 +239,13 @@ waiting_order = [
     "Reception"
 ]
 
-waiting_chart = create_comparison_chart(
-    data=waiting_data,
-    label_column="Referral stage",
-    value_column="Minutes",
-    label_order=waiting_order,
-    height=400
-)
 
-st.altair_chart(
-    waiting_chart,
-    width="stretch"
-)
-
-st.caption(
-    "The TO-BE process reduces waiting time across "
-    "all five referral stages."
-)
-
-
-# Patient-flow chart
-
-st.divider()
-
-st.subheader("Patient Flow: AS-IS vs TO-BE")
+# Prepare patient-flow data
 
 flow_data = (
-    kpi_data[kpi_data["category"] == "Patient flow"]
-    [["metric", "as_is", "to_be"]]
+    kpi_data[
+        kpi_data["category"] == "Patient flow"
+    ][["metric", "as_is", "to_be"]]
     .rename(columns={
         "metric": "Measure",
         "as_is": "AS-IS",
@@ -275,43 +263,80 @@ flow_order = [
     "Referred to Level 6"
 ]
 
-flow_chart = create_comparison_chart(
-    data=flow_data,
-    label_column="Measure",
-    value_column="Average cases per day",
-    label_order=flow_order,
-    height=260
-)
 
-st.altair_chart(
-    flow_chart,
-    width="stretch"
-)
-
-st.caption(
-    "The improved process treats more patients at Level 5 "
-    "and sends fewer patients to Level 6."
-)
+# Comparison charts
 
 st.divider()
 
-st.subheader("How the Data Pipeline Works")
+st.subheader("AS-IS and TO-BE Comparison")
 
-st.markdown(
-    "### CSV → Python → DuckDB → SQL → Streamlit"
-)
+waiting_tab, flow_tab = st.tabs([
+    "Waiting Times",
+    "Patient Flow"
+])
 
-st.caption(
-    "Simulated referral data is cleaned with Python, "
-    "stored in DuckDB, queried using SQL, and presented "
-    "through the Streamlit dashboard."
-)
 
-# SQL pipeline table
+with waiting_tab:
+    waiting_chart = create_comparison_chart(
+        data=waiting_data,
+        label_column="Referral stage",
+        value_column="Minutes",
+        label_order=waiting_order,
+        height=360
+    )
+
+    st.altair_chart(
+        waiting_chart,
+        width="stretch"
+    )
+
+    st.caption(
+        "The TO-BE process reduces waiting time "
+        "across all five referral stages."
+    )
+
+
+with flow_tab:
+    flow_chart = create_comparison_chart(
+        data=flow_data,
+        label_column="Measure",
+        value_column="Average cases per day",
+        label_order=flow_order,
+        height=240
+    )
+
+    st.altair_chart(
+        flow_chart,
+        width="stretch"
+    )
+
+    st.caption(
+        "The TO-BE process completes more cases at Level 5 "
+        "and sends fewer referrals to Level 6."
+    )
+
+
+# Technical information
 
 st.divider()
 
-with st.expander("View SQL pipeline output", expanded=False):
+with st.expander(
+    "Technical details and data download",
+    expanded=False
+):
+    st.markdown("**Data pipeline**")
+
+    st.write(
+        "CSV → Python → DuckDB → SQL → Streamlit"
+    )
+
+    st.caption(
+        "The source data is transformed with Python, stored "
+        "in DuckDB, queried with SQL and displayed in Streamlit."
+    )
+
+    st.markdown("**Processed KPI table**")
+
     display_table = kpi_data.rename(columns={
         "metric": "Metric",
         "category": "Category",
@@ -338,33 +363,40 @@ with st.expander("View SQL pipeline output", expanded=False):
         mime="text/csv"
     )
 
-
-# Data quality checks
-
-st.divider()
-
-with st.expander("Data Pipeline Health", expanded=False):
-    st.caption(
-        "Technical checks for the data loaded into the dashboard."
-    )
+    st.markdown("**Data quality**")
 
     total_rows = len(kpi_data)
-    missing_values = int(kpi_data.isna().sum().sum())
-    duplicate_rows = int(kpi_data.duplicated().sum())
+    missing_values = int(
+        kpi_data.isna().sum().sum()
+    )
+    duplicate_metrics = int(
+        kpi_data.duplicated(
+            subset=["metric"]
+        ).sum()
+    )
 
     quality1, quality2, quality3 = st.columns(3)
 
-    quality1.metric("Rows loaded", total_rows)
-    quality2.metric("Missing values", missing_values)
-    quality3.metric("Duplicate rows", duplicate_rows)
+    quality1.metric(
+        "KPI rows",
+        total_rows
+    )
 
-    if missing_values == 0 and duplicate_rows == 0:
+    quality2.metric(
+        "Missing values",
+        missing_values
+    )
+
+    quality3.metric(
+        "Duplicate metrics",
+        duplicate_metrics
+    )
+
+    if missing_values == 0 and duplicate_metrics == 0:
         st.success(
-            "All checks passed. The data is complete "
-            "and contains no duplicate rows."
+            "All data quality checks passed."
         )
     else:
         st.warning(
-            "The data contains missing values or duplicate rows."
+            "The KPI table contains data quality issues."
         )
-        
