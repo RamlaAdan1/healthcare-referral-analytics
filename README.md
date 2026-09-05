@@ -1,6 +1,9 @@
 # AIRTOS: Healthcare Referral Data Platform
 [![Test data pipeline](https://github.com/RamlaAdan1/healthcare-referral-analytics/actions/workflows/test-pipeline.yml/badge.svg)](https://github.com/RamlaAdan1/healthcare-referral-analytics/actions/workflows/test-pipeline.yml)
 
+## Live Dashboard
+
+[Open the AIRTOS Referral Data Platform](https://healthcare-referral-analytics-bykxnqrlybwazcsyyj94qs.streamlit.app/)
 A data engineering and analytics project based on Kenya's Level 4–6 public hospital referral pathway.
 
 ## Project Purpose
