@@ -11,6 +11,35 @@ st.set_page_config(
 )
 
 
+# Project information sidebar
+
+with st.sidebar:
+    st.header("About This Project")
+
+    st.write(
+        "AIRTOS analyses Kenya's Level 4–6 "
+        "public hospital referral pathway."
+    )
+
+    st.subheader("Technology")
+
+    st.markdown(
+        """
+        - Python
+        - Pandas
+        - DuckDB
+        - SQL
+        - Altair
+        - Streamlit
+        """
+    )
+
+    st.info(
+        "This portfolio project uses simulated "
+        "and anonymised academic data."
+    )
+
+
 @st.cache_data
 def load_kpis():
     build_data_pipeline()
