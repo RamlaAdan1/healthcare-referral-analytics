@@ -7,6 +7,10 @@
 
 A data engineering and analytics project based on Kenya's Level 4–6 public hospital referral pathway.
 
+## Dashboard Preview
+
+![AIRTOS Referral Data Platform dashboard](dashboard-preview.png)
+
 ## Project Purpose
 
 This project demonstrates how referral data can be processed and analysed to identify waiting times, patient flow and possible service improvements.
